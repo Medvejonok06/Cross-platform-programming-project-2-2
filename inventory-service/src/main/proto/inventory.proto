@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+// Налаштування для Java (щоб Quarkus знав, куди класти згенерований код)
+option java_multiple_files = true;
+option java_package = "org.acme.inventory";
+option java_outer_classname = "InventoryProto";
+
+package inventory;
+
+// Визначаємо сервіс "Склад"
+service Inventory {
+  // Функція: Перевірити наявність (приймає запит -> повертає відповідь)
+  rpc CheckStock (StockRequest) returns (StockResponse) {}
+}
+
+// Що ми надсилаємо (тільки ID товару)
+message StockRequest {
+  int64 productId = 1;
+}
+
+// Що ми отримуємо у відповідь
+message StockResponse {
+  int64 productId = 1;
+  int32 quantity = 2; // Скільки штук залишилось
+  bool inStock = 3;   // Чи є товар (так/ні)
+}
