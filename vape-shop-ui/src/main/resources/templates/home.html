@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Vape Shop</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="container mt-5">
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>🔥 Vape Shop Products</h1>
+    <div>
+        <span class="me-3 fw-bold">User: {user.principal.name}</span>
+        <a href="/logout" class="btn btn-outline-danger">Logout</a>
+    </div>
+</div>
+
+<div class="alert alert-success">
+    Security enabled via Keycloak (Dev Services)
+</div>
+
+<table class="table table-hover">
+    <thead class="table-dark">
+    <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Category</th>
+        <th>Price (UAH)</th>
+        <th>Action</th>
+    </tr>
+    </thead>
+    <tbody>
+    {#for product in products}
+    <tr>
+        <td>{product.id}</td>
+        <td>{product.name}</td>
+        <td>{product.category}</td>
+        <td>{product.price}</td>
+        <td>
+            <button class="btn btn-primary btn-sm">Buy</button>
+        </td>
+    </tr>
+    {/for}
+    </tbody>
+</table>
+</body>
+</html>
