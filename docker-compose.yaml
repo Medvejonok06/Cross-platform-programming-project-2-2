@@ -51,5 +51,16 @@ services:
     container_name: mongo-db
     ports:
       - "27017:27017"
+
+  # База даних для Order Service (Repository Pattern)
+  order-db:
+      image: postgres:15
+      container_name: order-db
+      environment:
+        POSTGRES_DB: order_db
+        POSTGRES_USER: user
+        POSTGRES_PASSWORD: 12345
+      ports:
+        - "5434:5432" # Використовуємо порт 5434, щоб не конфліктував з іншими
 volumes:
   keycloak_data:

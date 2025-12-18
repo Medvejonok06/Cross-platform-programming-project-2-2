@@ -2,61 +2,73 @@ package org.acme;
 
 import io.quarkus.grpc.GrpcClient;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import org.acme.inventory.Inventory;      // gRPC інтерфейс
-import org.acme.inventory.StockRequest;   // gRPC запит
-import org.acme.inventory.StockResponse;  // gRPC відповідь
+import jakarta.transaction.Transactional; // Важливо для бази!
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import org.acme.inventory.Inventory;
+import org.acme.inventory.StockRequest;
+import org.acme.inventory.StockResponse;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 @Path("/orders")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class OrderResource {
 
     @Inject
     @RestClient
-    ProductClient productClient; // Підключаємо REST клієнт
+    ProductClient productClient;
 
     @GrpcClient("inventory-service")
-    Inventory inventoryService;  // Підключаємо gRPC клієнт
+    Inventory inventoryService;
 
-    @GET
+    @Inject
+    OrderRepository orderRepository; // <--- Впровадили репозиторій
+
+    @POST // Змінили на POST, бо ми записуємо в базу
     @Path("/{id}")
-    public OrderDTO createOrder(@PathParam("id") Long productId) {
-        OrderDTO order = new OrderDTO();
+    @Transactional // Обов'язково для збереження!
+    public Order createOrder(@PathParam("id") Long productId) {
+        // Створюємо нову сутність для бази
+        Order order = new Order();
+        order.setProductId(productId);
 
-        // КРОК 1: Йдемо в Product Service (REST) за інформацією про товар
-        // Це звичайний синхронний виклик
-        Product product = productClient.getById(productId);
-
-        // Якщо товару не існує
-        if (product == null) {
-            order.status = "PRODUCT NOT FOUND";
+        // КРОК 1: REST запит до Product Service
+        Product product = null;
+        try {
+            product = productClient.getById(productId);
+        } catch (Exception e) {
+            // Якщо товару немає або сервіс лежить
+            order.setStatus("PRODUCT SERVICE UNAVAILABLE OR NOT FOUND");
+            orderRepository.persist(order); // Зберігаємо навіть помилку
             return order;
         }
 
-        order.productName = product.name;
-        order.price = product.price;
+        order.setProductName(product.name);
+        order.setPrice(product.price);
 
-        // КРОК 2: Йдемо в Inventory Service (gRPC) перевірити склад
-        // build() створює запит
+        // КРОК 2: gRPC запит до Inventory Service
         StockRequest request = StockRequest.newBuilder().setProductId(productId).build();
-
-        // await().indefinitely() - це спосіб перетворити асинхронний gRPC у синхронний
-        // (ми чекаємо відповідь тут і зараз)
         StockResponse stockResponse = inventoryService
                 .checkStock(request)
                 .await().indefinitely();
 
-        order.isAvailable = stockResponse.getInStock();
-
-        // КРОК 3: Приймаємо рішення
-        if (order.isAvailable) {
-            order.status = "CONFIRMED - Order created for " + product.name;
+        // КРОК 3: Приймаємо рішення і ЗБЕРІГАЄМО в базу
+        if (stockResponse.getInStock()) {
+            order.setStatus("CONFIRMED");
         } else {
-            order.status = "REJECTED - Out of stock";
+            order.setStatus("REJECTED - Out of stock");
         }
 
+        // <--- ГОЛОВНИЙ МОМЕНТ ЛАБОРАТОРНОЇ: Збереження через репозиторій
+        orderRepository.persist(order);
+
         return order;
+    }
+
+    // Додатковий метод, щоб подивитися всі збережені замовлення
+    @GET
+    public java.util.List<Order> listAll() {
+        return orderRepository.listAll();
     }
 }
