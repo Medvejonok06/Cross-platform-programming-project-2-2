@@ -1,17 +1,21 @@
 package org.acme;
 
-public class Product {
-    public Long id;          // Унікальний номер
-    public String name;      // Назва (наприклад, "Elf Bar")
-    public String category;  // Категорія ("Pod System", "Liquid")
-    public double price;     // Ціна
+import io.quarkus.hibernate.orm.panache.PanacheEntity; // 1. Батьківський клас Active Record
+import jakarta.persistence.Entity; // 2. Анотація JPA
 
-    // Порожній конструктор потрібен для роботи Quarkus/JSON
+@Entity // Це каже Quarkus створити таблицю "Product"
+public class Product extends PanacheEntity {
+
+    // Поле id вже є в PanacheEntity, тому його писати не треба!
+
+    public String name;
+    public String category;
+    public double price;
+
+    // Конструктор
     public Product() {}
 
-    // Конструктор для швидкого створення товарів у коді
-    public Product(Long id, String name, String category, double price) {
-        this.id = id;
+    public Product(String name, String category, double price) {
         this.name = name;
         this.category = category;
         this.price = price;

@@ -34,6 +34,22 @@ services:
     volumes:
       # Ця папка знадобиться, якщо ми захочемо зберегти налаштування реалму
       - ./keycloak-config:/opt/keycloak/data/import
+  # База даних для Product Service
+  product-db:
+    image: postgres:15
+    container_name: product-db
+    environment:
+      POSTGRES_DB: product_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: 12345  # <--- ВАШ НОВИЙ ПАРОЛЬ
+    ports:
+      - "5433:5432"
 
+  # База даних для Inventory Service (MongoDB)
+  mongo-db:
+    image: mongo:6.0
+    container_name: mongo-db
+    ports:
+      - "27017:27017"
 volumes:
   keycloak_data:

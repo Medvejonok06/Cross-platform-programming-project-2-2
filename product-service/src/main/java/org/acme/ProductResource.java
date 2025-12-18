@@ -1,34 +1,42 @@
 package org.acme;
 
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
+import jakarta.transaction.Transactional; // Важливо для запису в БД
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.util.List;
 
-@Path("/products") // Всі запити на адресу /products йтимуть сюди
+@Path("/products")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class ProductResource {
 
-    // Створюємо "фейкову" базу даних з 3 товарів
-    private final List<Product> products = List.of(
-            new Product(1L, "Elf Bar BC5000", "Disposable", 350.00),
-            new Product(2L, "Vaporesso XROS 3", "Pod System", 1100.00),
-            new Product(3L, "Chaser 30ml", "Liquid", 250.00)
-    );
-
-    // Метод 1: Отримати всі товари
+    // @GET: Отримати всі товари з бази
     @GET
-    public List<Product> getAll() {
-        return products;
+    public List<Product> list() {
+        return Product.listAll(); // Магія Active Record
     }
 
-    // Метод 2: Отримати конкретний товар по ID
+    // @GET: Отримати один товар
     @GET
     @Path("/{id}")
-    public Product getById(@PathParam("id") Long id) {
-        // Шукаємо товар у списку. Якщо не знайшли - повернеться null
-        return products.stream()
-                .filter(p -> p.id.equals(id))
-                .findFirst()
-                .orElse(null);
+    public Product get(@PathParam("id") Long id) {
+        return Product.findById(id);
+    }
+
+    // @POST: Створити товар (Потребує транзакції)
+    @POST
+    @Transactional
+    public Response create(Product product) {
+        product.persist(); // Зберегти в базу
+        return Response.status(Response.Status.CREATED).entity(product).build();
+    }
+
+    // @DELETE: Видалити товар
+    @DELETE
+    @Path("/{id}")
+    @Transactional
+    public void delete(@PathParam("id") Long id) {
+        Product.deleteById(id);
     }
 }
